@@ -97,7 +97,7 @@ def find_knee_point(cycles, soh):
     return cycles[knee_idx], soh[knee_idx]
 
 # Load Processed Data
-processed_dir = "/Users/akashsunilsomsetwar/Desktop/edi_4/data_processed"
+processed_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data_processed")
 df_features = pd.read_csv(os.path.join(processed_dir, "cycle_features.csv"))
 df_metrics = pd.read_csv(os.path.join(processed_dir, "model_comparison_metrics.csv"))
 df_predictions = pd.read_csv(os.path.join(processed_dir, "test_predictions.csv"))
@@ -369,7 +369,7 @@ elif page == "🚨 Health & Anomaly Center":
         
         @st.cache_data
         def get_battery_raw_data(battery_id):
-            base_dir = "/Users/akashsunilsomsetwar/Desktop/edi_4"
+            base_dir = os.path.dirname(os.path.abspath(__file__))
             for folder in ["Battery_Uniform_Distribution_Charge_Discharge_DataSet_2Post", "RW_Skewed_High_Room_Temp_DataSet_2Post", "RW_Skewed_High_40C_DataSet_2Post"]:
                 p = os.path.join(base_dir, folder, f"data/Matlab/{battery_id}.mat")
                 if os.path.exists(p):
@@ -382,8 +382,15 @@ elif page == "🚨 Health & Anomaly Center":
             sel_bat = st.selectbox("Select Battery ID for Live Run", sorted(df_features['battery_id'].unique()), key="sel_bat_ekf")
             mat_data = get_battery_raw_data(sel_bat)
             
+            is_cloud_mode = False
             if mat_data is None:
-                st.error("MATLAB file not found.")
+                is_cloud_mode = True
+                st.warning("☁️ Cloud Mode: Raw MATLAB files not found. Using preloaded sample telemetry for Cell RW10 (Cycle 1).")
+                valid_step_indices = [0]
+                cycle_num = 1
+                downsample = st.select_slider("Telemetry Downsampling Rate", options=[1, 2, 5, 10, 20], value=5)
+                sim_noise = st.checkbox("Inject +50mA Sensor Bias (Test EKF Drift Rejection)", value=True)
+                run_stream = st.checkbox("Start Live Telemetry Stream", value=False)
             else:
                 step_struct = mat_data['data'][0, 0]['step']
                 valid_step_indices = []
@@ -404,18 +411,32 @@ elif page == "🚨 Health & Anomaly Center":
             status_container = st.empty()
             chart_container = st.empty()
             
-        if run_stream and mat_data is not None:
-            idx = valid_step_indices[cycle_num - 1]
-            v_raw = step_struct[0, idx]['voltage'][0]
-            curr_raw = step_struct[0, idx]['current'][0]
-            temp_raw = np.clip(step_struct[0, idx]['temperature'][0], 15.0, 60.0)
-            time_raw = step_struct[0, idx]['relativeTime'][0]
-            
-            df_bat_feats = df_features[df_features['battery_id'] == sel_bat]
-            current_soh = df_bat_feats['soh'].iloc[cycle_num-1] if cycle_num-1 < len(df_bat_feats) else 80.0
-            current_rul = int(df_bat_feats['rul'].iloc[cycle_num-1]) if cycle_num-1 < len(df_bat_feats) else 50
-            Q_n = df_bat_feats['capacity'].iloc[0]
-            Q_actual = df_bat_feats['capacity'].iloc[cycle_num-1] if cycle_num-1 < len(df_bat_feats) else Q_n
+        if run_stream:
+            if is_cloud_mode:
+                csv_path = os.path.join(processed_dir, "sample_telemetry.csv")
+                df_sample = pd.read_csv(csv_path)
+                v_raw = df_sample['voltage'].values
+                curr_raw = df_sample['current'].values
+                temp_raw = df_sample['temperature'].values
+                time_raw = df_sample['relativeTime'].values
+                
+                df_bat_feats = df_features[df_features['battery_id'] == "RW10"]
+                current_soh = df_bat_feats['soh'].iloc[0] if len(df_bat_feats) > 0 else 88.0
+                current_rul = int(df_bat_feats['rul'].iloc[0]) if len(df_bat_feats) > 0 else 120
+                Q_n = df_bat_feats['capacity'].iloc[0] if len(df_bat_feats) > 0 else 2.0
+                Q_actual = Q_n
+            else:
+                idx = valid_step_indices[cycle_num - 1]
+                v_raw = step_struct[0, idx]['voltage'][0]
+                curr_raw = step_struct[0, idx]['current'][0]
+                temp_raw = np.clip(step_struct[0, idx]['temperature'][0], 15.0, 60.0)
+                time_raw = step_struct[0, idx]['relativeTime'][0]
+                
+                df_bat_feats = df_features[df_features['battery_id'] == sel_bat]
+                current_soh = df_bat_feats['soh'].iloc[cycle_num-1] if cycle_num-1 < len(df_bat_feats) else 80.0
+                current_rul = int(df_bat_feats['rul'].iloc[cycle_num-1]) if cycle_num-1 < len(df_bat_feats) else 50
+                Q_n = df_bat_feats['capacity'].iloc[0]
+                Q_actual = df_bat_feats['capacity'].iloc[cycle_num-1] if cycle_num-1 < len(df_bat_feats) else Q_n
             
             # EKF starts at 90% SOC (10% mismatch to demonstrate initial convergence)
             ekf = BatteryEKF(R0=0.08, R1=0.05, C1=2000.0, Q_n=Q_actual, dt=1.0)
