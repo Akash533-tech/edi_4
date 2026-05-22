@@ -1,0 +1,29 @@
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Large raw datasets
+Battery_Uniform_Distribution_Charge_Discharge_DataSet_2Post/
+RW_Skewed_High_Room_Temp_DataSet_2Post/
+RW_Skewed_High_40C_DataSet_2Post/
+data/
+
+# Notebooks checkpoints
+.ipynb_checkpoints/

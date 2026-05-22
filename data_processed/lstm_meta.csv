@@ -1,0 +1,472 @@
+battery_id,condition,cycle
+RW10,Uniform RT,1
+RW10,Uniform RT,2
+RW10,Uniform RT,3
+RW10,Uniform RT,4
+RW10,Uniform RT,5
+RW10,Uniform RT,6
+RW10,Uniform RT,7
+RW10,Uniform RT,8
+RW10,Uniform RT,9
+RW10,Uniform RT,10
+RW10,Uniform RT,11
+RW10,Uniform RT,12
+RW10,Uniform RT,13
+RW10,Uniform RT,14
+RW10,Uniform RT,15
+RW10,Uniform RT,16
+RW10,Uniform RT,17
+RW10,Uniform RT,18
+RW10,Uniform RT,19
+RW10,Uniform RT,20
+RW10,Uniform RT,21
+RW10,Uniform RT,22
+RW10,Uniform RT,23
+RW10,Uniform RT,24
+RW10,Uniform RT,25
+RW10,Uniform RT,26
+RW10,Uniform RT,27
+RW10,Uniform RT,28
+RW10,Uniform RT,29
+RW10,Uniform RT,30
+RW10,Uniform RT,31
+RW10,Uniform RT,32
+RW10,Uniform RT,33
+RW10,Uniform RT,34
+RW10,Uniform RT,35
+RW10,Uniform RT,36
+RW10,Uniform RT,37
+RW10,Uniform RT,38
+RW10,Uniform RT,39
+RW10,Uniform RT,40
+RW10,Uniform RT,41
+RW10,Uniform RT,42
+RW10,Uniform RT,43
+RW10,Uniform RT,44
+RW10,Uniform RT,45
+RW10,Uniform RT,46
+RW10,Uniform RT,47
+RW10,Uniform RT,48
+RW10,Uniform RT,49
+RW10,Uniform RT,50
+RW10,Uniform RT,51
+RW10,Uniform RT,52
+RW10,Uniform RT,53
+RW10,Uniform RT,54
+RW10,Uniform RT,55
+RW10,Uniform RT,56
+RW10,Uniform RT,57
+RW10,Uniform RT,58
+RW10,Uniform RT,59
+RW10,Uniform RT,60
+RW10,Uniform RT,61
+RW10,Uniform RT,62
+RW10,Uniform RT,63
+RW10,Uniform RT,64
+RW10,Uniform RT,65
+RW10,Uniform RT,66
+RW10,Uniform RT,67
+RW10,Uniform RT,68
+RW10,Uniform RT,69
+RW10,Uniform RT,70
+RW10,Uniform RT,71
+RW10,Uniform RT,72
+RW10,Uniform RT,73
+RW10,Uniform RT,74
+RW10,Uniform RT,75
+RW10,Uniform RT,76
+RW10,Uniform RT,77
+RW11,Uniform RT,1
+RW11,Uniform RT,2
+RW11,Uniform RT,3
+RW11,Uniform RT,4
+RW11,Uniform RT,5
+RW11,Uniform RT,6
+RW11,Uniform RT,7
+RW11,Uniform RT,8
+RW11,Uniform RT,9
+RW11,Uniform RT,10
+RW11,Uniform RT,11
+RW11,Uniform RT,12
+RW11,Uniform RT,13
+RW11,Uniform RT,14
+RW11,Uniform RT,15
+RW11,Uniform RT,16
+RW11,Uniform RT,17
+RW11,Uniform RT,18
+RW11,Uniform RT,19
+RW11,Uniform RT,20
+RW11,Uniform RT,21
+RW11,Uniform RT,22
+RW11,Uniform RT,23
+RW11,Uniform RT,24
+RW11,Uniform RT,25
+RW11,Uniform RT,26
+RW11,Uniform RT,27
+RW11,Uniform RT,28
+RW11,Uniform RT,29
+RW11,Uniform RT,30
+RW11,Uniform RT,31
+RW11,Uniform RT,32
+RW11,Uniform RT,33
+RW11,Uniform RT,34
+RW11,Uniform RT,35
+RW11,Uniform RT,36
+RW11,Uniform RT,37
+RW11,Uniform RT,38
+RW11,Uniform RT,39
+RW11,Uniform RT,40
+RW11,Uniform RT,41
+RW11,Uniform RT,42
+RW11,Uniform RT,43
+RW11,Uniform RT,44
+RW11,Uniform RT,45
+RW11,Uniform RT,46
+RW11,Uniform RT,47
+RW11,Uniform RT,48
+RW11,Uniform RT,49
+RW11,Uniform RT,50
+RW11,Uniform RT,51
+RW11,Uniform RT,52
+RW11,Uniform RT,53
+RW11,Uniform RT,54
+RW11,Uniform RT,55
+RW11,Uniform RT,56
+RW11,Uniform RT,57
+RW11,Uniform RT,58
+RW11,Uniform RT,59
+RW11,Uniform RT,60
+RW11,Uniform RT,61
+RW11,Uniform RT,62
+RW11,Uniform RT,63
+RW11,Uniform RT,64
+RW11,Uniform RT,65
+RW11,Uniform RT,66
+RW11,Uniform RT,67
+RW11,Uniform RT,68
+RW11,Uniform RT,69
+RW11,Uniform RT,70
+RW11,Uniform RT,71
+RW11,Uniform RT,72
+RW11,Uniform RT,73
+RW11,Uniform RT,74
+RW11,Uniform RT,75
+RW11,Uniform RT,76
+RW11,Uniform RT,77
+RW12,Uniform RT,1
+RW12,Uniform RT,2
+RW12,Uniform RT,3
+RW12,Uniform RT,4
+RW12,Uniform RT,5
+RW12,Uniform RT,6
+RW12,Uniform RT,7
+RW12,Uniform RT,8
+RW12,Uniform RT,9
+RW12,Uniform RT,10
+RW12,Uniform RT,11
+RW12,Uniform RT,12
+RW12,Uniform RT,13
+RW12,Uniform RT,14
+RW12,Uniform RT,15
+RW12,Uniform RT,16
+RW12,Uniform RT,17
+RW12,Uniform RT,18
+RW12,Uniform RT,19
+RW12,Uniform RT,20
+RW12,Uniform RT,21
+RW12,Uniform RT,22
+RW12,Uniform RT,23
+RW12,Uniform RT,24
+RW12,Uniform RT,25
+RW12,Uniform RT,26
+RW12,Uniform RT,27
+RW12,Uniform RT,28
+RW12,Uniform RT,29
+RW12,Uniform RT,30
+RW12,Uniform RT,31
+RW12,Uniform RT,32
+RW12,Uniform RT,33
+RW12,Uniform RT,34
+RW12,Uniform RT,35
+RW12,Uniform RT,36
+RW12,Uniform RT,37
+RW12,Uniform RT,38
+RW12,Uniform RT,39
+RW12,Uniform RT,40
+RW12,Uniform RT,41
+RW12,Uniform RT,42
+RW12,Uniform RT,43
+RW12,Uniform RT,44
+RW12,Uniform RT,45
+RW12,Uniform RT,46
+RW12,Uniform RT,47
+RW12,Uniform RT,48
+RW12,Uniform RT,49
+RW12,Uniform RT,50
+RW12,Uniform RT,51
+RW12,Uniform RT,52
+RW12,Uniform RT,53
+RW12,Uniform RT,54
+RW12,Uniform RT,55
+RW12,Uniform RT,56
+RW12,Uniform RT,57
+RW12,Uniform RT,58
+RW12,Uniform RT,59
+RW12,Uniform RT,60
+RW12,Uniform RT,61
+RW12,Uniform RT,62
+RW12,Uniform RT,63
+RW12,Uniform RT,64
+RW12,Uniform RT,65
+RW12,Uniform RT,66
+RW12,Uniform RT,67
+RW12,Uniform RT,68
+RW12,Uniform RT,69
+RW12,Uniform RT,70
+RW12,Uniform RT,71
+RW12,Uniform RT,72
+RW12,Uniform RT,73
+RW12,Uniform RT,74
+RW12,Uniform RT,75
+RW12,Uniform RT,76
+RW9,Uniform RT,1
+RW9,Uniform RT,2
+RW9,Uniform RT,3
+RW9,Uniform RT,4
+RW9,Uniform RT,5
+RW9,Uniform RT,6
+RW9,Uniform RT,7
+RW9,Uniform RT,8
+RW9,Uniform RT,9
+RW9,Uniform RT,10
+RW9,Uniform RT,11
+RW9,Uniform RT,12
+RW9,Uniform RT,13
+RW9,Uniform RT,14
+RW9,Uniform RT,15
+RW9,Uniform RT,16
+RW9,Uniform RT,17
+RW9,Uniform RT,18
+RW9,Uniform RT,19
+RW9,Uniform RT,20
+RW9,Uniform RT,21
+RW9,Uniform RT,22
+RW9,Uniform RT,23
+RW9,Uniform RT,24
+RW9,Uniform RT,25
+RW9,Uniform RT,26
+RW9,Uniform RT,27
+RW9,Uniform RT,28
+RW9,Uniform RT,29
+RW9,Uniform RT,30
+RW9,Uniform RT,31
+RW9,Uniform RT,32
+RW9,Uniform RT,33
+RW9,Uniform RT,34
+RW9,Uniform RT,35
+RW9,Uniform RT,36
+RW9,Uniform RT,37
+RW9,Uniform RT,38
+RW9,Uniform RT,39
+RW9,Uniform RT,40
+RW9,Uniform RT,41
+RW9,Uniform RT,42
+RW9,Uniform RT,43
+RW9,Uniform RT,44
+RW9,Uniform RT,45
+RW9,Uniform RT,46
+RW9,Uniform RT,47
+RW9,Uniform RT,48
+RW9,Uniform RT,49
+RW9,Uniform RT,50
+RW9,Uniform RT,51
+RW9,Uniform RT,52
+RW9,Uniform RT,53
+RW9,Uniform RT,54
+RW9,Uniform RT,55
+RW9,Uniform RT,56
+RW9,Uniform RT,57
+RW9,Uniform RT,58
+RW9,Uniform RT,59
+RW9,Uniform RT,60
+RW9,Uniform RT,61
+RW9,Uniform RT,62
+RW9,Uniform RT,63
+RW9,Uniform RT,64
+RW9,Uniform RT,65
+RW9,Uniform RT,66
+RW9,Uniform RT,67
+RW9,Uniform RT,68
+RW9,Uniform RT,69
+RW9,Uniform RT,70
+RW9,Uniform RT,71
+RW9,Uniform RT,72
+RW9,Uniform RT,73
+RW9,Uniform RT,74
+RW9,Uniform RT,75
+RW9,Uniform RT,76
+RW9,Uniform RT,77
+RW9,Uniform RT,78
+RW9,Uniform RT,79
+RW9,Uniform RT,80
+RW17,Skewed RT,1
+RW17,Skewed RT,2
+RW17,Skewed RT,3
+RW17,Skewed RT,4
+RW17,Skewed RT,5
+RW17,Skewed RT,6
+RW17,Skewed RT,7
+RW17,Skewed RT,8
+RW17,Skewed RT,9
+RW17,Skewed RT,10
+RW17,Skewed RT,11
+RW17,Skewed RT,12
+RW17,Skewed RT,13
+RW17,Skewed RT,14
+RW17,Skewed RT,15
+RW17,Skewed RT,16
+RW17,Skewed RT,17
+RW17,Skewed RT,18
+RW17,Skewed RT,19
+RW17,Skewed RT,20
+RW17,Skewed RT,21
+RW17,Skewed RT,22
+RW17,Skewed RT,23
+RW17,Skewed RT,24
+RW17,Skewed RT,25
+RW17,Skewed RT,26
+RW17,Skewed RT,27
+RW17,Skewed RT,28
+RW18,Skewed RT,1
+RW18,Skewed RT,2
+RW18,Skewed RT,3
+RW18,Skewed RT,4
+RW18,Skewed RT,5
+RW18,Skewed RT,6
+RW18,Skewed RT,7
+RW18,Skewed RT,8
+RW18,Skewed RT,9
+RW18,Skewed RT,10
+RW18,Skewed RT,11
+RW18,Skewed RT,12
+RW18,Skewed RT,13
+RW18,Skewed RT,14
+RW18,Skewed RT,15
+RW18,Skewed RT,16
+RW18,Skewed RT,17
+RW18,Skewed RT,18
+RW18,Skewed RT,19
+RW18,Skewed RT,20
+RW18,Skewed RT,21
+RW18,Skewed RT,22
+RW18,Skewed RT,23
+RW18,Skewed RT,24
+RW18,Skewed RT,25
+RW18,Skewed RT,26
+RW18,Skewed RT,27
+RW19,Skewed RT,1
+RW19,Skewed RT,2
+RW19,Skewed RT,3
+RW19,Skewed RT,4
+RW19,Skewed RT,5
+RW19,Skewed RT,6
+RW19,Skewed RT,7
+RW19,Skewed RT,8
+RW19,Skewed RT,9
+RW19,Skewed RT,10
+RW19,Skewed RT,11
+RW19,Skewed RT,12
+RW19,Skewed RT,13
+RW19,Skewed RT,14
+RW19,Skewed RT,15
+RW19,Skewed RT,16
+RW19,Skewed RT,17
+RW19,Skewed RT,18
+RW19,Skewed RT,19
+RW19,Skewed RT,20
+RW19,Skewed RT,21
+RW19,Skewed RT,22
+RW19,Skewed RT,23
+RW19,Skewed RT,24
+RW19,Skewed RT,25
+RW19,Skewed RT,26
+RW20,Skewed RT,1
+RW20,Skewed RT,2
+RW20,Skewed RT,3
+RW20,Skewed RT,4
+RW20,Skewed RT,5
+RW20,Skewed RT,6
+RW20,Skewed RT,7
+RW20,Skewed RT,8
+RW20,Skewed RT,9
+RW20,Skewed RT,10
+RW20,Skewed RT,11
+RW20,Skewed RT,12
+RW20,Skewed RT,13
+RW20,Skewed RT,14
+RW20,Skewed RT,15
+RW20,Skewed RT,16
+RW20,Skewed RT,17
+RW20,Skewed RT,18
+RW20,Skewed RT,19
+RW20,Skewed RT,20
+RW20,Skewed RT,21
+RW20,Skewed RT,22
+RW20,Skewed RT,23
+RW20,Skewed RT,24
+RW20,Skewed RT,25
+RW20,Skewed RT,26
+RW20,Skewed RT,27
+RW20,Skewed RT,28
+RW20,Skewed RT,29
+RW25,Skewed High 40C,1
+RW25,Skewed High 40C,2
+RW25,Skewed High 40C,3
+RW25,Skewed High 40C,4
+RW25,Skewed High 40C,5
+RW25,Skewed High 40C,6
+RW25,Skewed High 40C,7
+RW25,Skewed High 40C,8
+RW25,Skewed High 40C,9
+RW25,Skewed High 40C,10
+RW25,Skewed High 40C,11
+RW25,Skewed High 40C,12
+RW25,Skewed High 40C,13
+RW26,Skewed High 40C,1
+RW26,Skewed High 40C,2
+RW26,Skewed High 40C,3
+RW26,Skewed High 40C,4
+RW26,Skewed High 40C,5
+RW26,Skewed High 40C,6
+RW26,Skewed High 40C,7
+RW26,Skewed High 40C,8
+RW26,Skewed High 40C,9
+RW26,Skewed High 40C,10
+RW26,Skewed High 40C,11
+RW26,Skewed High 40C,12
+RW26,Skewed High 40C,13
+RW26,Skewed High 40C,14
+RW27,Skewed High 40C,1
+RW27,Skewed High 40C,2
+RW27,Skewed High 40C,3
+RW27,Skewed High 40C,4
+RW27,Skewed High 40C,5
+RW27,Skewed High 40C,6
+RW27,Skewed High 40C,7
+RW27,Skewed High 40C,8
+RW27,Skewed High 40C,9
+RW27,Skewed High 40C,10
+RW27,Skewed High 40C,11
+RW27,Skewed High 40C,12
+RW28,Skewed High 40C,1
+RW28,Skewed High 40C,2
+RW28,Skewed High 40C,3
+RW28,Skewed High 40C,4
+RW28,Skewed High 40C,5
+RW28,Skewed High 40C,6
+RW28,Skewed High 40C,7
+RW28,Skewed High 40C,8
+RW28,Skewed High 40C,9
+RW28,Skewed High 40C,10
+RW28,Skewed High 40C,11
+RW28,Skewed High 40C,12
