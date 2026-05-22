@@ -6,6 +6,8 @@ import pickle
 import plotly.graph_objects as go
 import plotly.express as px
 from src.anomaly_detection import detect_anomaly, calculate_health_score, get_flowchart_dot, BatteryEKF
+from src.electrochemistry import calculate_ica, calculate_dva, fit_ecm_parameters
+from src.pdf_generator import generate_pdf_report
 import scipy.io
 
 # Set page configuration
@@ -116,7 +118,8 @@ page = st.sidebar.radio(
         "🤖 Machine Learning Models",
         "🚨 Health & Anomaly Center",
         "⚡ Intelligent Charging Simulation",
-        "🔮 Upload & Predict: Custom Diagnostics"
+        "🔮 Upload & Predict: Custom Diagnostics",
+        "🔋 Advanced Electrochemistry (ICA/ECM)"
     ]
 )
 
@@ -364,6 +367,26 @@ elif page == "🚨 Health & Anomaly Center":
                 <div style='font-size:0.9rem; color:#ffffff; margin-top:0.2rem;'><b>Mitigation Action:</b> {anomaly['mitigation']}</div>
             </div>
             """, unsafe_allow_html=True)
+
+            # Generate static report PDF
+            pdf_data = generate_pdf_report(
+                battery_id="SIM-CELL-01",
+                condition="Simulated Static Run",
+                cycle=max(1, 200 - sim_rul),
+                soh=sim_soh,
+                rul=sim_rul,
+                health_score=health['score'],
+                health_band=health['band'],
+                anomaly_status=anomaly['status'],
+                mitigation_action=anomaly['mitigation']
+            )
+            st.download_button(
+                label="📥 Download Diagnostic PDF Report",
+                data=pdf_data,
+                file_name="battery_static_diagnostic_report.pdf",
+                mime="application/pdf",
+                key="btn_pdf_static"
+            )
 
     with tab2:
         st.write("Stream real-time battery sensor data to test the **Extended Kalman Filter (EKF)** and **Anomaly Detector**:")
@@ -755,6 +778,26 @@ elif page == "🔮 Upload & Predict: Custom Diagnostics":
                         'SOH_Prediction': '{:.2f}%',
                         'RUL_Prediction': '{:.0f} cycles'
                     }))
+
+                    # Generate Tabular diagnostic report PDF
+                    pdf_up_data = generate_pdf_report(
+                        battery_id="CUSTOM-TABULAR",
+                        condition="Custom Tabular Upload",
+                        cycle=l_cycle,
+                        soh=l_soh,
+                        rul=l_rul,
+                        health_score=calculate_health_score(l_soh, l_rul)['score'],
+                        health_band=calculate_health_score(l_soh, l_rul)['band'],
+                        anomaly_status=detect_anomaly(l_soh, latest_row['peak_temp'])['status'],
+                        mitigation_action=detect_anomaly(l_soh, latest_row['peak_temp'])['mitigation']
+                    )
+                    st.download_button(
+                        label="📥 Download Tabular Diagnostics Report (PDF)",
+                        data=pdf_up_data,
+                        file_name=f"battery_custom_tabular_cycle_{l_cycle}_report.pdf",
+                        mime="application/pdf",
+                        key="btn_pdf_custom_tab"
+                    )
             except Exception as e:
                 st.error(f"Error executing tabular diagnostics: {e}")
 
@@ -927,3 +970,161 @@ elif page == "🔮 Upload & Predict: Custom Diagnostics":
                         <div style='font-size:0.85rem; color:#ffffff; margin-top:0.4rem;'><b>Action:</b> {anomaly_state['mitigation']}</div>
                     </div>
                     """, unsafe_allow_html=True)
+
+                # Generate raw telemetry report PDF
+                pdf_raw_data = generate_pdf_report(
+                    battery_id="CUSTOM-RAW-UNIT",
+                    condition="Custom Raw Telemetry Upload",
+                    cycle=custom_cycle_idx,
+                    soh=pred_soh_rf,
+                    rul=pred_rul_rf,
+                    health_score=health_state['score'],
+                    health_band=health_state['band'],
+                    anomaly_status=anomaly_state['status'],
+                    mitigation_action=anomaly_state['mitigation']
+                )
+                st.download_button(
+                    label="📥 Download Raw Telemetry Diagnostics Report (PDF)",
+                    data=pdf_raw_data,
+                    file_name=f"battery_custom_raw_cycle_{custom_cycle_idx}_report.pdf",
+                    mime="application/pdf",
+                    key="btn_pdf_custom_raw"
+                )
+
+# ----------------- PAGE 7: ADVANCED ELECTROCHEMISTRY (ICA/ECM) -----------------
+elif page == "🔋 Advanced Electrochemistry (ICA/ECM)":
+    st.markdown("<h1 class='main-title'>Advanced Electrochemical Diagnostics</h1>", unsafe_allow_html=True)
+    st.markdown("<p class='sub-title'>Incremental Capacity Analysis (dQ/dV), Differential Voltage Analysis (dV/dQ), and 1-RC Thevenin circuit fitting.</p>", unsafe_allow_html=True)
+    
+    # Load all processed batteries
+    all_files = [f for f in os.listdir(processed_dir) if f.endswith(".csv") and f.startswith("battery_")]
+    battery_names = sorted(list(set([f.split("_")[1].replace(".csv", "") for f in all_files])))
+    
+    selected_bat = st.selectbox("Select Target Battery", battery_names, key="sel_bat_electro")
+    
+    if selected_bat:
+        # Load cycle features
+        df_bat = pd.read_csv(os.path.join(processed_dir, f"battery_{selected_bat}.csv"))
+        
+        tab_ica, tab_ecm = st.tabs(["📈 Incremental Capacity (ICA/DVA)", "⚡ Equivalent Circuit Fitting (ECM)"])
+        
+        # Load base telemetry for scaling
+        base_telemetry = pd.read_csv(os.path.join(processed_dir, "sample_telemetry.csv"))
+        dt = np.diff(base_telemetry['relativeTime'].values)
+        current = base_telemetry['current'].values
+        base_capacity = np.zeros(len(base_telemetry))
+        for i in range(1, len(base_telemetry)):
+            base_capacity[i] = base_capacity[i-1] + abs(current[i-1]) * dt[i-1] / 3600.0
+            
+        with tab_ica:
+            st.write("Incremental Capacity ($dQ/dV$) and Differential Voltage ($dV/dQ$) curves help identify degradation modes like **Loss of Active Material (LAM)** and **Loss of Lithium Inventory (LLI)**.")
+            
+            available_cycles = sorted(df_bat['cycle'].unique().tolist())
+            if len(available_cycles) > 5:
+                default_cycles = [available_cycles[0], available_cycles[len(available_cycles)//2], available_cycles[-1]]
+            else:
+                default_cycles = available_cycles
+                
+            selected_cycles = st.multiselect("Select Cycles to Compare", available_cycles, default=default_cycles)
+            
+            if selected_cycles:
+                fig_ica = go.Figure()
+                fig_dva = go.Figure()
+                
+                for cyc in sorted(selected_cycles):
+                    row = df_bat[df_bat['cycle'] == cyc]
+                    if not row.empty:
+                        soh_val = row.iloc[0]['soh']
+                        ri_val = row.iloc[0]['ri']
+                        
+                        Q_cyc = base_capacity * (soh_val / 100.0)
+                        R_diff = ri_val - 0.0827
+                        V_cyc = base_telemetry['voltage'].values - current * R_diff
+                        
+                        V_mid, dq_dv = calculate_ica(V_cyc, Q_cyc)
+                        Q_mid, dv_dq = calculate_dva(V_cyc, Q_cyc)
+                        
+                        if len(V_mid) > 0:
+                            fig_ica.add_trace(go.Scatter(x=V_mid, y=dq_dv, name=f"Cycle {cyc} (SOH {soh_val:.1f}%)", mode='lines', line=dict(width=2)))
+                        if len(Q_mid) > 0:
+                            fig_dva.add_trace(go.Scatter(x=Q_mid, y=dv_dq, name=f"Cycle {cyc} (SOH {soh_val:.1f}%)", mode='lines', line=dict(width=2)))
+                            
+                fig_ica.update_layout(
+                    title="Incremental Capacity Curves (dQ/dV vs Voltage)",
+                    xaxis_title="Voltage (V)",
+                    yaxis_title="dQ/dV (Ah/V)",
+                    template="plotly_dark",
+                    height=450
+                )
+                st.plotly_chart(fig_ica, use_container_width=True)
+                
+                fig_dva.update_layout(
+                    title="Differential Voltage Curves (dV/dQ vs Capacity)",
+                    xaxis_title="Discharge Capacity (Ah)",
+                    yaxis_title="dV/dQ (V/Ah)",
+                    template="plotly_dark",
+                    height=450
+                )
+                st.plotly_chart(fig_dva, use_container_width=True)
+                
+        with tab_ecm:
+            st.write("Identifies the parameters of a **1-RC Thevenin Equivalent Circuit Model** ($R_0, R_1, C_1$) dynamically as the battery ages.")
+            
+            cyc_sel = st.selectbox("Select Cycle to Inspect Model Parameters", available_cycles, index=0)
+            row_sel = df_bat[df_bat['cycle'] == cyc_sel]
+            
+            if not row_sel.empty:
+                soh_val = row_sel.iloc[0]['soh']
+                ri_val = row_sel.iloc[0]['ri']
+                
+                Q_cyc = base_capacity * (soh_val / 100.0)
+                R_diff = ri_val - 0.0827
+                V_cyc = base_telemetry['voltage'].values - current * R_diff
+                time_cyc = base_telemetry['relativeTime'].values
+                
+                ecm_params = fit_ecm_parameters(V_cyc, current, time_cyc)
+                
+                col_ecm1, col_ecm2, col_ecm3, col_ecm4 = st.columns(4)
+                with col_ecm1:
+                    st.metric("Ohmic Resistance (R₀)", f"{ecm_params['R0']:.4f} Ω")
+                with col_ecm2:
+                    st.metric("Polarization Resistance (R₁)", f"{ecm_params['R1']:.4f} Ω")
+                with col_ecm3:
+                    st.metric("Polarization Capacitance (C₁)", f"{ecm_params['C1']:.1f} F")
+                with col_ecm4:
+                    st.metric("Time Constant (τ)", f"{ecm_params['tau']:.2f} s")
+                
+                trends_R0 = []
+                trends_R1 = []
+                trends_C1 = []
+                cycles_list = []
+                
+                for cyc_t in available_cycles[::2]:
+                    r_t = df_bat[df_bat['cycle'] == cyc_t]
+                    if not r_t.empty:
+                        soh_t = r_t.iloc[0]['soh']
+                        ri_t = r_t.iloc[0]['ri']
+                        Q_t = base_capacity * (soh_t / 100.0)
+                        V_t = base_telemetry['voltage'].values - current * (ri_t - 0.0827)
+                        params_t = fit_ecm_parameters(V_t, current, time_cyc)
+                        
+                        cycles_list.append(cyc_t)
+                        trends_R0.append(params_t['R0'])
+                        trends_R1.append(params_t['R1'])
+                        trends_C1.append(params_t['C1'])
+                
+                st.markdown("### 📈 Equivalent Circuit Model Aging Trends")
+                col_gr1, col_gr2 = st.columns(2)
+                
+                with col_gr1:
+                    fig_res = go.Figure()
+                    fig_res.add_trace(go.Scatter(x=cycles_list, y=trends_R0, name="Ohmic Resistance (R0)", line=dict(color='#e74c3c', width=3)))
+                    fig_res.add_trace(go.Scatter(x=cycles_list, y=trends_R1, name="Polarization Resistance (R1)", line=dict(color='#f1c40f', width=3)))
+                    fig_res.update_layout(title="Ohmic and Polarization Resistance Fade", xaxis_title="Cycle Index", yaxis_title="Resistance (Ω)", template="plotly_dark", height=350)
+                    st.plotly_chart(fig_res, use_container_width=True)
+                    
+                with col_gr2:
+                    fig_cap = go.Figure()
+                    fig_cap.add_trace(go.Scatter(x=cycles_list, y=trends_C1, name="Polarization Capacitance (C1)", line=dict(color='#2ecc71', width=3)))
+                    fig_cap.update_layout(title="Polarization Capacitance Variation", xaxis_title="Cycle Index", yaxis_title="Capacitance (F)", template="plotly_dark", height=350)
+                    st.plotly_chart(fig_cap, use_container_width=True)
