@@ -996,15 +996,14 @@ elif page == "🔋 Advanced Electrochemistry (ICA/ECM)":
     st.markdown("<h1 class='main-title'>Advanced Electrochemical Diagnostics</h1>", unsafe_allow_html=True)
     st.markdown("<p class='sub-title'>Incremental Capacity Analysis (dQ/dV), Differential Voltage Analysis (dV/dQ), and 1-RC Thevenin circuit fitting.</p>", unsafe_allow_html=True)
     
-    # Load all processed batteries
-    all_files = [f for f in os.listdir(processed_dir) if f.endswith(".csv") and f.startswith("battery_")]
-    battery_names = sorted(list(set([f.split("_")[1].replace(".csv", "") for f in all_files])))
+    # Get unique batteries from cycle_features dataframe
+    battery_names = sorted(df_features['battery_id'].unique().tolist())
     
     selected_bat = st.selectbox("Select Target Battery", battery_names, key="sel_bat_electro")
     
     if selected_bat:
-        # Load cycle features
-        df_bat = pd.read_csv(os.path.join(processed_dir, f"battery_{selected_bat}.csv"))
+        # Filter features for selected battery
+        df_bat = df_features[df_features['battery_id'] == selected_bat]
         
         tab_ica, tab_ecm = st.tabs(["📈 Incremental Capacity (ICA/DVA)", "⚡ Equivalent Circuit Fitting (ECM)"])
         
