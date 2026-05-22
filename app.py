@@ -115,7 +115,8 @@ page = st.sidebar.radio(
         "⚙️ Feature Engineering & Physics",
         "🤖 Machine Learning Models",
         "🚨 Health & Anomaly Center",
-        "⚡ Intelligent Charging Simulation"
+        "⚡ Intelligent Charging Simulation",
+        "🔮 Upload & Predict: Custom Diagnostics"
     ]
 )
 
@@ -627,3 +628,302 @@ elif page == "⚡ Intelligent Charging Simulation":
             height=350
         )
         st.plotly_chart(fig3, use_container_width=True)
+
+# ----------------- PAGE 6: CUSTOM DIAGNOSTICS UPLOAD & PREDICT -----------------
+elif page == "🔮 Upload & Predict: Custom Diagnostics":
+    st.markdown("<h1 class='main-title'>Custom Diagnostic Center</h1>", unsafe_allow_html=True)
+    st.markdown("<p class='sub-title'>Upload your own CSV or MAT files to run degradation diagnostics, health scoring, and SOH/RUL predictions.</p>", unsafe_allow_html=True)
+    
+    # Check if TensorFlow is available for sequence prediction
+    try:
+        import tensorflow as tf
+        HAS_TENSORFLOW = True
+    except ImportError:
+        HAS_TENSORFLOW = False
+        
+    # Load ML Models from processed_dir
+    @st.cache_resource
+    def load_rf_models():
+        with open(os.path.join(processed_dir, "rf_soh.pkl"), "rb") as f:
+            rf_soh = pickle.load(f)
+        with open(os.path.join(processed_dir, "rf_rul.pkl"), "rb") as f:
+            rf_rul = pickle.load(f)
+        return rf_soh, rf_rul
+
+    @st.cache_resource
+    def load_lstm_models():
+        if not HAS_TENSORFLOW:
+            return None, None, None
+        soh_lstm = tf.keras.models.load_model(os.path.join(processed_dir, "lstm_soh.keras"))
+        rul_lstm = tf.keras.models.load_model(os.path.join(processed_dir, "lstm_rul.keras"))
+        with open(os.path.join(processed_dir, "seq_norm_params.pkl"), "rb") as f:
+            norm_params = pickle.load(f)
+        return soh_lstm, rul_lstm, norm_params
+
+    try:
+        rf_soh_model, rf_rul_model = load_rf_models()
+        rf_loaded = True
+    except Exception as e:
+        st.error(f"Error loading Random Forest models: {e}")
+        rf_loaded = False
+
+    lstm_soh_model, lstm_rul_model, lstm_norm_params = load_lstm_models()
+
+    if not HAS_TENSORFLOW:
+        st.info("ℹ️ Running in lightweight mode (TensorFlow not detected). Sequence-based LSTM predictions are disabled, but tabular Random Forest models are fully active. Run the dashboard locally inside the virtual environment to enable full LSTM diagnostics.")
+
+    tab1, tab2 = st.tabs(["📇 Upload Tabular Cycle Features (CSV)", "📊 Upload Raw Cycle Telemetry (CSV/MAT)"])
+
+    with tab1:
+        st.write("Upload a CSV file containing precalculated cycle-level parameters for your battery.")
+        st.markdown("""
+        **Required Columns:**
+        - `cycle`: Cycle number (integer)
+        - `ri`: Internal Resistance (Ohms, e.g., 0.08)
+        - `peak_temp`: Peak temperature during discharge (°C)
+        - `voltage_drop`: Total discharge voltage drop (V)
+        - `duration`: Discharge event duration (seconds)
+        - `mean_rw_temp`: Mean temperature during random walk steps (°C)
+        - `max_rw_temp`: Maximum temperature during random walk steps (°C)
+        """)
+
+        # Provide a sample cycle feature template for download
+        sample_tabular_df = pd.DataFrame([
+            {'cycle': 1, 'ri': 0.081, 'peak_temp': 28.5, 'voltage_drop': 1.15, 'duration': 3500.0, 'mean_rw_temp': 24.8, 'max_rw_temp': 25.2},
+            {'cycle': 10, 'ri': 0.083, 'peak_temp': 29.1, 'voltage_drop': 1.18, 'duration': 3420.0, 'mean_rw_temp': 25.1, 'max_rw_temp': 25.5},
+            {'cycle': 50, 'ri': 0.091, 'peak_temp': 31.4, 'voltage_drop': 1.25, 'duration': 3100.0, 'mean_rw_temp': 24.9, 'max_rw_temp': 25.3},
+            {'cycle': 100, 'ri': 0.112, 'peak_temp': 35.8, 'voltage_drop': 1.38, 'duration': 2650.0, 'mean_rw_temp': 25.0, 'max_rw_temp': 25.4}
+        ])
+        
+        st.download_button(
+            label="Download Tabular CSV Template",
+            data=sample_tabular_df.to_csv(index=False),
+            file_name="battery_features_template.csv",
+            mime="text/csv"
+        )
+
+        uploaded_tabular = st.file_uploader("Choose Tabular CSV File", type=["csv"], key="uploader_tab1")
+
+        if uploaded_tabular is not None and rf_loaded:
+            try:
+                df_up = pd.read_csv(uploaded_tabular)
+                required_cols = ['cycle', 'ri', 'peak_temp', 'voltage_drop', 'duration', 'mean_rw_temp', 'max_rw_temp']
+                
+                missing_cols = []
+                for c in required_cols:
+                    match = [col for col in df_up.columns if col.strip().lower() == c]
+                    if match:
+                        df_up[c] = df_up[match[0]]
+                    else:
+                        missing_cols.append(c)
+                
+                if len(missing_cols) > 0:
+                    st.error(f"Missing required columns in CSV: {missing_cols}")
+                else:
+                    df_up = df_up.sort_values('cycle').reset_index(drop=True)
+                    
+                    X_input = df_up[required_cols].values.astype(np.float32)
+                    df_up['SOH_Prediction'] = rf_soh_model.predict(X_input)
+                    df_up['RUL_Prediction'] = rf_rul_model.predict(X_input)
+                    
+                    st.success("Successfully run Random Forest Diagnostic Models!")
+                    
+                    latest_row = df_up.iloc[-1]
+                    l_soh = latest_row['SOH_Prediction']
+                    l_rul = latest_row['RUL_Prediction']
+                    l_cycle = int(latest_row['cycle'])
+                    
+                    col_m1, col_m2, col_m3 = st.columns(3)
+                    with col_m1:
+                        st.metric("Latest Diagnosed Cycle", f"Cycle {l_cycle}")
+                    with col_m2:
+                        st.metric("Predicted SOH (%)", f"{l_soh:.2f}%")
+                    with col_m3:
+                        st.metric("Predicted RUL (Remaining Cycles)", f"{int(l_rul)} Cycles")
+                        
+                    fig_soh = go.Figure()
+                    fig_soh.add_trace(go.Scatter(x=df_up['cycle'], y=df_up['SOH_Prediction'], name='SOH Forecast (%)', line=dict(color='#1abc9c', width=3)))
+                    fig_soh.add_shape(type="line", x0=df_up['cycle'].min(), y0=80, x1=df_up['cycle'].max(), y1=80, line=dict(color="#f1c40f", dash="dash"))
+                    fig_soh.update_layout(title="Diagnosed State of Health (SOH) Trend", xaxis_title="Cycle Index", yaxis_title="SOH (%)", template="plotly_dark", height=350)
+                    st.plotly_chart(fig_soh, use_container_width=True)
+                    
+                    st.dataframe(df_up[['cycle', 'ri', 'peak_temp', 'voltage_drop', 'duration', 'SOH_Prediction', 'RUL_Prediction']].style.format({
+                        'ri': '{:.4f} Ω',
+                        'peak_temp': '{:.2f} °C',
+                        'voltage_drop': '{:.3f} V',
+                        'duration': '{:.1f} s',
+                        'SOH_Prediction': '{:.2f}%',
+                        'RUL_Prediction': '{:.0f} cycles'
+                    }))
+            except Exception as e:
+                st.error(f"Error executing tabular diagnostics: {e}")
+
+    with tab2:
+        st.write("Upload a raw charge-discharge cycle time-series file. This can be a CSV containing time-series columns or a MATLAB (.mat) step-structure file.")
+        
+        col_c1, col_c2 = st.columns(2)
+        with col_c1:
+            st.markdown("""
+            **Expected CSV Columns (Raw Time-Series):**
+            - `relativeTime` (or `time`): Seconds from start (e.g. 0, 1, 2...)
+            - `voltage` (or `V`): Cell voltage (V, e.g. 4.2 to 2.7)
+            - `current` (or `I`): Cell current (A, discharge is negative, charge is positive)
+            - `temperature` (or `T`): Cell temperature (°C)
+            """)
+        with col_c2:
+            st.markdown("""
+            **Expected MAT Format:**
+            - A MATLAB workspace export containing the NASA `data` workspace variable with a nested `step` structure.
+            """)
+
+        # Provide template download for raw CSV
+        sample_raw_df = pd.read_csv(os.path.join(processed_dir, "sample_telemetry.csv"))
+        st.download_button(
+            label="Download Raw Telemetry CSV Template",
+            data=sample_raw_df.to_csv(index=False),
+            file_name="battery_raw_telemetry_template.csv",
+            mime="text/csv"
+        )
+
+        uploaded_raw = st.file_uploader("Choose Raw Telemetry File (CSV or MAT)", type=["csv", "mat"], key="uploader_tab2")
+        custom_cycle_idx = st.number_input("Specify Current Battery Cycle Index", min_value=1, value=1, step=1)
+
+        if uploaded_raw is not None:
+            v_raw, curr_raw, temp_raw, time_raw = None, None, None, None
+            
+            filename = uploaded_raw.name
+            if filename.endswith('.mat'):
+                try:
+                    import io
+                    mat_data = scipy.io.loadmat(io.BytesIO(uploaded_raw.read()))
+                    if 'data' in mat_data:
+                        step_struct = mat_data['data'][0, 0]['step']
+                        found_dis = False
+                        for idx in range(step_struct.shape[1]):
+                            c = step_struct[0, idx]['comment']
+                            if c.size > 0 and str(c[0]) == 'reference discharge':
+                                v_raw = step_struct[0, idx]['voltage'][0]
+                                curr_raw = step_struct[0, idx]['current'][0]
+                                temp_raw = np.clip(step_struct[0, idx]['temperature'][0], 15.0, 60.0)
+                                time_raw = step_struct[0, idx]['relativeTime'][0]
+                                if len(v_raw) >= 50 and len(time_raw) >= 50:
+                                    found_dis = True
+                                    st.info(f"Loaded reference discharge step index {idx} from MAT file.")
+                                    break
+                        if not found_dis:
+                            st.error("Could not find any valid reference discharge steps inside the MAT step structure.")
+                    else:
+                        st.error("MAT workspace doesn't contain a 'data' struct.")
+                except Exception as e:
+                    st.error(f"Error parsing uploaded MAT file: {e}")
+            else:
+                try:
+                    df_raw = pd.read_csv(uploaded_raw)
+                    cols = [c.lower().strip() for c in df_raw.columns]
+                    
+                    v_match = [col for col in df_raw.columns if col.strip().lower() in ['voltage', 'v']]
+                    curr_match = [col for col in df_raw.columns if col.strip().lower() in ['current', 'i', 'curr']]
+                    temp_match = [col for col in df_raw.columns if col.strip().lower() in ['temperature', 't', 'temp']]
+                    time_match = [col for col in df_raw.columns if col.strip().lower() in ['relativetime', 'time', 't_s']]
+                    
+                    if not v_match or not curr_match:
+                        st.error("CSV must contain at least 'voltage' and 'current' columns.")
+                    else:
+                        v_raw = df_raw[v_match[0]].values
+                        curr_raw = df_raw[curr_match[0]].values
+                        temp_raw = df_raw[temp_match[0]].values if temp_match else np.ones_like(v_raw) * 25.0
+                        time_raw = df_raw[time_match[0]].values if time_match else np.arange(len(v_raw))
+                        st.info("Successfully loaded CSV columns.")
+                except Exception as e:
+                    st.error(f"Error reading CSV raw telemetry: {e}")
+
+            if v_raw is not None and curr_raw is not None and time_raw is not None:
+                capacity = np.sum(np.diff(time_raw) * (curr_raw[:-1] + curr_raw[1:]) / 2.0) / 3600.0 if len(time_raw) > 1 else 0.0
+                ri = 0.08
+                if len(curr_raw) > 1:
+                    dv = v_raw[0] - v_raw[1]
+                    di = curr_raw[1] - curr_raw[0]
+                    if abs(di) > 0.01:
+                        ri = dv / di
+                if ri <= 0.01 or ri > 0.5:
+                    ri = 0.08
+                
+                peak_temp = np.max(temp_raw)
+                voltage_drop = v_raw[0] - v_raw[-1]
+                duration = time_raw[-1] - time_raw[0]
+                
+                st.success("Physical Features Extracted Successfully!")
+                
+                col_e1, col_e2, col_e3, col_e4 = st.columns(4)
+                with col_e1:
+                    st.metric("Discharge Capacity", f"{capacity:.4f} Ah")
+                with col_e2:
+                    st.metric("Internal Resistance", f"{ri:.4f} Ω")
+                with col_e3:
+                    st.metric("Peak Temperature", f"{peak_temp:.2f} °C")
+                with col_e4:
+                    st.metric("Voltage Drop", f"{voltage_drop:.3f} V")
+
+                X_rf = np.array([[custom_cycle_idx, ri, peak_temp, voltage_drop, duration, 25.0, 25.0]], dtype=np.float32)
+                pred_soh_rf = rf_soh_model.predict(X_rf)[0]
+                pred_rul_rf = rf_rul_model.predict(X_rf)[0]
+
+                lstm_ran = False
+                if HAS_TENSORFLOW and lstm_soh_model is not None:
+                    try:
+                        xp = np.linspace(0, 1, len(v_raw))
+                        x_new = np.linspace(0, 1, 100)
+                        v_100 = np.interp(x_new, xp, v_raw)
+                        curr_100 = np.interp(x_new, xp, curr_raw)
+                        temp_100 = np.interp(x_new, xp, temp_raw)
+                        
+                        seq = np.column_stack([v_100, curr_100, temp_100])
+                        seq_scaled = (seq - lstm_norm_params['mean']) / lstm_norm_params['std']
+                        seq_scaled = np.expand_dims(seq_scaled, axis=0).astype(np.float32)
+                        
+                        pred_soh_lstm = lstm_soh_model.predict(seq_scaled, verbose=0)[0][0]
+                        pred_rul_lstm = lstm_rul_model.predict(seq_scaled, verbose=0)[0][0]
+                        lstm_ran = True
+                    except Exception as e:
+                        st.warning(f"Failed running sequence-based LSTM: {e}")
+
+                st.markdown("### 🔮 Diagnostics Results")
+                
+                col_d1, col_d2 = st.columns(2)
+                with col_d1:
+                    fig_soh = go.Figure()
+                    fig_soh.add_trace(go.Bar(name='Random Forest', x=['SOH (%)'], y=[pred_soh_rf], marker_color='#1abc9c'))
+                    if lstm_ran:
+                        fig_soh.add_trace(go.Bar(name='LSTM (Sequence)', x=['SOH (%)'], y=[pred_soh_lstm], marker_color='#3498db'))
+                    fig_soh.update_layout(yaxis_range=[30, 100], title="Predicted State of Health (SOH)", template="plotly_dark", height=300)
+                    st.plotly_chart(fig_soh, use_container_width=True)
+                    
+                with col_d2:
+                    fig_rul = go.Figure()
+                    fig_rul.add_trace(go.Bar(name='Random Forest', x=['RUL (Cycles)'], y=[pred_rul_rf], marker_color='#e67e22'))
+                    if lstm_ran:
+                        fig_rul.add_trace(go.Bar(name='LSTM (Sequence)', x=['RUL (Cycles)'], y=[pred_rul_lstm], marker_color='#e74c3c'))
+                    fig_rul.update_layout(title="Predicted Remaining Useful Life (RUL)", template="plotly_dark", height=300)
+                    st.plotly_chart(fig_rul, use_container_width=True)
+
+                anomaly_state = detect_anomaly(pred_soh_rf, peak_temp)
+                health_state = calculate_health_score(pred_soh_rf, pred_rul_rf)
+                
+                col_s1, col_s2 = st.columns(2)
+                with col_s1:
+                    st.markdown(f"""
+                    <div style='background-color:{health_state['color']}; border-radius:12px; padding:1.2rem; color:#1e272e; font-weight:700;'>
+                        <div style='font-size:0.8rem; text-transform:uppercase;'>Composite Health Score</div>
+                        <div style='font-size:2.8rem; font-family:Space Grotesk;'>{health_state['score']}/100</div>
+                        <div style='font-size:1.1rem; margin-top:0.3rem;'>Condition Band: {health_state['band']}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                with col_s2:
+                    st.markdown(f"""
+                    <div style='background-color:#1e272e; border: 2px solid {anomaly_state['color']}; border-radius:12px; padding:1.2rem;'>
+                        <div style='font-size:0.8rem; color:#a4b0be; text-transform:uppercase;'>Anomaly Status</div>
+                        <div style='font-size:2.0rem; font-weight:700; color:{anomaly_state['color']};'>{anomaly_state['status']}</div>
+                        <div style='font-size:0.85rem; color:#ffffff; margin-top:0.4rem;'><b>Action:</b> {anomaly_state['mitigation']}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
