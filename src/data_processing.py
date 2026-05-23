@@ -199,14 +199,28 @@ def process_all_data():
                     all_features.append(feat_dict)
                     
                     # 5. Extract and downsample raw cycle curves for LSTM
-                    # Sequence input is (voltage, current, temperature)
+                    # Sequence input is (voltage, current, temperature, elapsed_time, cumulative_capacity, cycle_normalized, ri, mean_rw_temp, max_rw_temp)
                     # We interpolate to exactly 100 points
                     t_new = np.linspace(t[0], t[-1], 100)
                     v_new = np.interp(t_new, t, v)
                     curr_new = np.interp(t_new, t, curr)
                     temp_new = np.interp(t_new, t, temp)
                     
-                    seq_matrix = np.stack([v_new, curr_new, temp_new], axis=1)  # shape (100, 3)
+                    elapsed_time = t_new - t_new[0]
+                    dt_new = np.diff(t_new)
+                    dt_new = np.insert(dt_new, 0, 0.0)
+                    cumulative_capacity = np.cumsum(dt_new * abs(curr_new)) / 3600.0
+                    cycle_normalized = np.full(100, (k + 1) / 100.0)
+                    ri_channel = np.full(100, ri)
+                    mean_rw_channel = np.full(100, mean_rw_temp)
+                    max_rw_channel = np.full(100, max_rw_temp)
+                    
+                    seq_matrix = np.stack([
+                        v_new, curr_new, temp_new, 
+                        elapsed_time, cumulative_capacity, 
+                        cycle_normalized, ri_channel, 
+                        mean_rw_channel, max_rw_channel
+                    ], axis=1)  # shape (100, 9)
                     lstm_sequences.append(seq_matrix)
                     lstm_targets_soh.append(soh)
                     lstm_targets_rul.append(rul)

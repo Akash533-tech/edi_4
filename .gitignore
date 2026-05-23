@@ -27,3 +27,6 @@ data/
 
 # Notebooks checkpoints
 .ipynb_checkpoints/
+
+# Local environment variables
+.env

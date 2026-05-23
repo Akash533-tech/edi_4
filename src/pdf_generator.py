@@ -1,11 +1,34 @@
 import io
+import html
+import re
 from datetime import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-def generate_pdf_report(battery_id, condition, cycle, soh, rul, health_score, health_band, anomaly_status, mitigation_action):
+def format_text_for_reportlab(text):
+    if not text:
+        return ""
+    # Strip or style think tags
+    text = text.replace("<think>", "___THINK_START___")
+    text = text.replace("</think>", "___THINK_END___")
+    
+    # Escape HTML special characters
+    text = html.escape(text)
+    
+    # Replace markdown bold **text** with <b>text</b>
+    text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
+    
+    # Restore think tags as ReportLab HTML formatting
+    text = text.replace("___THINK_START___", "<i><b>AI Thought Process:</b><br/>")
+    text = text.replace("___THINK_END___", "</i><br/><br/>")
+    
+    # Replace newlines with <br/>
+    text = text.replace("\n", "<br/>")
+    return text
+
+def generate_pdf_report(battery_id, condition, cycle, soh, rul, health_score, health_band, anomaly_status, mitigation_action, ai_analysis=None):
     """
     Generates a beautiful, high-quality PDF diagnostic report using ReportLab.
     Returns bytes of the PDF file.
@@ -129,6 +152,13 @@ def generate_pdf_report(battery_id, condition, cycle, soh, rul, health_score, he
     story.append(st_t)
     story.append(Spacer(1, 20))
     
+    # AI Analysis Section
+    if ai_analysis:
+        story.append(Paragraph("3. AI Copilot Telemetry Insights", heading_style))
+        formatted_ai = format_text_for_reportlab(ai_analysis)
+        story.append(Paragraph(formatted_ai, ParagraphStyle('AI_Analysis_Style', parent=normal_style, leading=15)))
+        story.append(Spacer(1, 20))
+        
     # Disclaimer
     story.append(Spacer(1, 10))
     story.append(Paragraph("<b>Disclaimer:</b> This diagnostic report is generated using statistical and deep learning models trained on the NASA randomized battery usage dataset. Final deployment safety checks should be conducted in accordance with cell manufacturer datasheets.", subtitle_style))

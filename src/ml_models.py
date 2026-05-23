@@ -59,18 +59,24 @@ def train_and_evaluate():
     
     # --- Sequence Data Split for LSTM ---
     # Scaling sequence inputs per channel
-    # Sequence shape: (N, 100, 3) where columns are [Voltage, Current, Temperature]
+    # Sequence shape: (N, 100, 9) where columns are [Voltage, Current, Temperature, elapsed_time, cumulative_capacity, cycle_normalized, ri, mean_rw_temp, max_rw_temp]
     # We'll normalize manually based on training set statistics
-    seq_mean = np.mean(lstm_sequences[train_mask], axis=(0, 1))
-    seq_std = np.std(lstm_sequences[train_mask], axis=(0, 1))
+    seq_mean = np.mean(lstm_sequences[train_mask.values], axis=(0, 1))
+    seq_std = np.std(lstm_sequences[train_mask.values], axis=(0, 1))
     
     # Avoid division by zero
     seq_std[seq_std == 0] = 1.0
     
     lstm_sequences_scaled = (lstm_sequences - seq_mean) / seq_std
     
-    X_train_lstm = lstm_sequences_scaled[train_mask].astype(np.float32)
-    X_test_lstm = lstm_sequences_scaled[test_mask].astype(np.float32)
+    X_train_lstm = lstm_sequences_scaled[train_mask.values].astype(np.float32)
+    X_test_lstm = lstm_sequences_scaled[test_mask.values].astype(np.float32)
+    
+    # Target scaling for LSTM
+    y_train_soh_scaled = y_train_soh / 100.0
+    
+    max_rul = float(y_train_rul.max())
+    y_train_rul_scaled = y_train_rul / max_rul
     
     # 2. Train Random Forest Models
     print("Training Random Forest models...")
@@ -95,21 +101,23 @@ def train_and_evaluate():
     
     # SOH LSTM
     model_soh = Sequential([
-        Input(shape=(100, 3)),
-        LSTM(64, return_sequences=False),
-        Dropout(0.2),
-        Dense(32, activation='relu'),
-        Dense(1)
+        Input(shape=(100, 9)),
+        LSTM(64, return_sequences=True),
+        Dropout(0.1),
+        LSTM(32, return_sequences=False),
+        Dropout(0.1),
+        Dense(16, activation='relu'),
+        Dense(1, activation='sigmoid')
     ])
     model_soh.compile(optimizer='adam', loss='mse')
     
-    # RUL LSTM
+    # RUL LSTM (simplified to prevent overfitting on small battery set)
     model_rul = Sequential([
-        Input(shape=(100, 3)),
-        LSTM(64, return_sequences=False),
-        Dropout(0.2),
-        Dense(32, activation='relu'),
-        Dense(1)
+        Input(shape=(100, 9)),
+        LSTM(32, return_sequences=False),
+        Dropout(0.3),
+        Dense(16, activation='relu'),
+        Dense(1, activation='sigmoid')
     ])
     model_rul.compile(optimizer='adam', loss='mse')
     
@@ -120,40 +128,41 @@ def train_and_evaluate():
         def on_epoch_end(self, epoch, logs=None):
             loss = logs.get('loss', 0.0)
             val_loss = logs.get('val_loss', 0.0)
-            print(f"  {self.target_name} - Epoch {epoch+1:02d}/25: loss={loss:.4f}, val_loss={val_loss:.4f}")
+            print(f"  {self.target_name} - Epoch {epoch+1:02d}/50: loss={loss:.6f}, val_loss={val_loss:.6f}")
             sys.stdout.flush()
 
-    early_stop = EarlyStopping(monitor='val_loss', patience=8, restore_best_weights=True)
+    early_stop_soh = EarlyStopping(monitor='val_loss', patience=15, restore_best_weights=True)
+    early_stop_rul = EarlyStopping(monitor='val_loss', patience=15, restore_best_weights=True)
     
     print("Fitting LSTM SOH...")
     model_soh.fit(
-        X_train_lstm, y_train_soh,
-        epochs=25,
+        X_train_lstm, y_train_soh_scaled,
+        epochs=50,
         batch_size=16,
         validation_split=0.15,
-        callbacks=[early_stop, SimpleProgressCallback("SOH")],
+        callbacks=[early_stop_soh, SimpleProgressCallback("SOH")],
         verbose=0
     )
     
     print("Fitting LSTM RUL...")
     model_rul.fit(
-        X_train_lstm, y_train_rul,
-        epochs=25,
+        X_train_lstm, y_train_rul_scaled,
+        epochs=50,
         batch_size=16,
         validation_split=0.15,
-        callbacks=[early_stop, SimpleProgressCallback("RUL")],
+        callbacks=[early_stop_rul, SimpleProgressCallback("RUL")],
         verbose=0
     )
     
     # Predict LSTM
-    y_pred_lstm_soh = model_soh.predict(X_test_lstm).flatten()
-    y_pred_lstm_rul = model_rul.predict(X_test_lstm).flatten()
+    y_pred_lstm_soh = model_soh.predict(X_test_lstm).flatten() * 100.0
+    y_pred_lstm_rul = model_rul.predict(X_test_lstm).flatten() * max_rul
     
     # Save LSTM models and normalization params
     model_soh.save(os.path.join(processed_dir, "lstm_soh.keras"))
     model_rul.save(os.path.join(processed_dir, "lstm_rul.keras"))
     
-    norm_params = {'mean': seq_mean, 'std': seq_std}
+    norm_params = {'mean': seq_mean, 'std': seq_std, 'max_rul': max_rul}
     with open(os.path.join(processed_dir, "seq_norm_params.pkl"), "wb") as f:
         pickle.dump(norm_params, f)
         
